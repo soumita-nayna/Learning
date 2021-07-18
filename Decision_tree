@@ -1,0 +1,154 @@
+#pip install graphviz
+import pandas as pd
+import numpy as np
+import graphviz
+from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
+from sklearn.model_selection import train_test_split # Import train_test_split function
+from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
+from matplotlib import pyplot as plt
+from sklearn.metrics import auc, classification_report, confusion_matrix, roc_curve
+from sklearn.metrics import roc_auc_score
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, stratify = y, random_state=1) # 70% training and 30% test
+
+clf = tree.DecisionTreeClassifier()
+clf = clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+# Extract feature importance
+wts        = clf.feature_importances_
+fimp       = pd.DataFrame({'importance':(wts*100).round(2), 'feature':x_cols})
+print("\n{0} features are non-zero...".format((fimp['importance']>0).sum()))
+print("\nFeatures")
+print(fimp[fimp['importance']>0].sort_values('importance', ascending=False).reset_index(drop=True))
+# Classify train, test, and all records
+Ytrnpred = clf.predict(X_train)
+Ytstpred = clf.predict(X_test)
+#Yallpred = mdl.predict(Xall)
+
+#adding the probability for each datapoint
+prob_train = clf.predict_proba(X_train)
+
+# Evaluate Model
+print("Train Confusion Matrix")
+print(confusion_matrix(y_train, Ytrnpred, labels=[0, 1]))
+print(classification_report(y_train, Ytrnpred, labels=[0, 1]))
+
+print("Test Confusion Matrix")
+print(confusion_matrix(y_test, Ytstpred, labels=[0, 1]))
+print(classification_report(y_test, Ytstpred, labels=[0, 1]))
+
+dt_roc_auc = roc_auc_score(y_test, clf.predict_proba(X_test)[:,1])
+print('ROC AUC: %0.2f' % dt_roc_auc)
+fpr, tpr, thresholds = roc_curve(y_test,  clf.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='Decision Tree (area = %0.2f)' % dt_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.savefig('Log_ROC')
+plt.show()
+
+export_graphviz(clf,
+                out_file      = '/Users/dtree_test.dot',
+                feature_names = x_cols,
+                class_names   = ['0', '1'],
+                node_ids      = True,
+                filled        = True,
+                rounded       = True,
+                rotate        = True,
+                proportion    = True,
+                precision     = 3)
+                
+def calculate_woe_iv(dataset, feature, target):
+    '''
+    Calculates the WOE and IV
+    Returns (1) a dataframe with values in a column and WOE value
+    Returns (2) final IV value
+    '''
+    lst = []
+    for i in range(dataset[feature].nunique()):
+        val = list(dataset[feature].unique())[i]
+        lst.append({
+            'Value': val,
+            'All': dataset[dataset[feature] == val].count()[feature],
+            'Good': dataset[(dataset[feature] == val) & (dataset[target] == 0)].count()[feature],
+            'Bad': dataset[(dataset[feature] == val) & (dataset[target] == 1)].count()[feature]
+        })
+        
+    dset = pd.DataFrame(lst)
+    dset['Distr_Good'] = dset['Good'] / dset['Good'].sum()
+    dset['Distr_Bad'] = dset['Bad'] / dset['Bad'].sum()
+    dset['WoE'] = np.log(dset['Distr_Good'] / dset['Distr_Bad'])
+    dset = dset.replace({'WoE': {np.inf: 0, -np.inf: 0}})
+    dset['IV'] = (dset['Distr_Good'] - dset['Distr_Bad']) * dset['WoE']
+    iv = dset['IV'].sum()
+    #print(dset)
+    dset = dset.sort_values(by='WoE')    
+    return dset, iv
+    
+    for col in x_cols:
+    if col == 'Exited': continue
+    else:
+        print('WoE and IV for column: {}'.format(col))
+        woe_df, iv = calculate_woe_iv(data_import, col, 'tag')
+        #woe_df_total = pd.merge(bin_desc, woe_df, how='inner', left_on='Tier', right_on='Value')
+        print(woe_df)
+        print('IV score: {:.2f}'.format(iv))
+        print('\n')
+        
+        
+# importing the required libraries
+import numpy as np
+from sklearn.model_selection import KFold
+
+'''# create a sample dataset
+X = np.array([[1, 2, 3, 2],
+             [3, 4, 1, 1],
+             [1, 2, 1, 1],
+             [3, 4, 1, 1]])
+
+y = np.array([1, 2, 3, 4])
+'''
+X = X_train
+y = y_train
+# create the object of the KFold
+kf = KFold(n_splits=2)
+
+print(kf)
+#KFold(n_splits=2, random_state=None, shuffle=False)
+
+for train_index, test_index in kf.split(X):
+  print("TRAIN:", train_index, "TEST:", test_index)    
+  X_train, X_test = X[train_index], X[test_index]
+  y_train, y_test = y[train_index], y[test_index]
+
+
+kf = KFold(n_splits=3)
+print(kf)
+#KFold(n_splits=3, random_state=None, shuffle=False)
+for train_index, test_index in kf.split(X):
+  print("TRAIN:", train_index, "TEST:", test_index)    
+  X_train, X_test = X[train_index], X[test_index]
+  y_train, y_test = y[train_index], y[test_index]
+ 
+dt_params = {'class_weight'      : 'balanced',
+             'min_impurity_decrease' : 0.0005,
+             'random_state'          : seedval} 
+    
+print("Seed Value: {}".format(seedval))
+
+print("Training Decision Tree with Parameters:")
+for item in dt_params.items():
+    print(item)
+
+
+
+# Define and Fit Model
+mdl        = DecisionTreeClassifier(**dt_params)
+mdl.fit(Xtrn, Ytrn)
